@@ -10,6 +10,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  int a=myFunction(1,2);
 }
 
 // put function definitions here:
