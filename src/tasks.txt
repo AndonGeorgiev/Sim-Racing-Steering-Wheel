@@ -1,15 +1,18 @@
 Software: 
+
 --Behaviour of the wheel (FFB - Force Feedback) based on speed
 --Wheel rotation limit (adjustable or fixed?)
 
 
 Reading the Rotation Angle:
+
 --Using the servo to measure the current angle.
 --Reading from the microcontroller’s analogue input.
 
 
 
 Data processing:
+
 --Converting the analog signal into an angel value 
 --Sending the data to the display 
 --Updating the readings in real-time 
@@ -17,6 +20,7 @@ Data processing:
 
 
 Servo Motor Control: 
+
 --Automatically drive the servo motor to the last save angel, if the angle is chang
 --Generate a PWM signal to control the motor 
 
