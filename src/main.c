@@ -44,9 +44,9 @@ ISR(INT0_vect) {
 int main(void) {
     // LCD init
     i2c_init();
-    lcd_init();
-    lcd_backlight();
-    lcd_clear();
+    LCD_init();
+    LCD_backlight();
+    LCD_clear();
 
     // Encoder pins
     DDRD &= ~((1 << PD2) | (1 << PD4)); 
@@ -68,8 +68,8 @@ int main(void) {
 
     sei(); 
 
-    lcd_set_cursor(0, 0);
-    lcd_print("Angle:");
+    LCD_set_cursor(0, 0);
+    printf("Angle:");
 
     while (1) {
         // ъгъл - да питам чата за оптимизация на формулата!
@@ -77,11 +77,11 @@ int main(void) {
 
         char buffer[16];
         dtostrf(angle, 6, 2, buffer);
-        lcd_set_cursor(0, 1);
-        lcd_print("              "); 
-        lcd_set_cursor(0, 1);
-        lcd_print(buffer);
-        lcd_print(" deg");
+        LCD_set_cursor(0, 1);
+        printf("              "); 
+        LCD_set_cursor(0, 1);
+        printf("%s",buffer);
+        printf(" deg");
 
     
         if (!(PINB & (1 << PB0))) {
