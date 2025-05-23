@@ -11,7 +11,39 @@ volatile long encoder_count = 0;
 volatile int8_t direction = 0;
 float angle = 0.0;
 float last_saved_angle = 0.0;
-const float pulses_per_rev = 500.0; // Da go proverq che eba li mu ....
+const float pulses_per_rev = 500.0 * 4.0;
+volatile uint8_t last_A = 0;
+volatile uint8_t last_B = 0;
+
+ISR(INT0_vect)
+{
+    uint8_t A = (PIND >> PD2) & 1;
+    uint8_t B = (PIND >> PD4) & 1;
+
+    if (A != last_A)
+    {
+        if (A == B)
+            encoder_count++;
+        else
+            encoder_count--;
+        last_A = A;
+    }
+}
+
+ISR(PCINT2_vect)
+{
+    uint8_t A = (PIND >> PD2) & 1;
+    uint8_t B = (PIND >> PD4) & 1;
+
+    if (B != last_B)
+    {
+        if (A != B)
+            encoder_count++;
+        else
+            encoder_count--;
+        last_B = B;
+    }
+}
 
 void motor_rotate_to(float target_angle);
 
@@ -35,6 +67,17 @@ int main(void)
     i2c_init();
     LCD_init();
 
+    // encoder pins
+    DDRD &= ~((1 << PD2) | (1 << PD4) | (1 << PD5)); 
+    PORTD |= (1 << PD2) | (1 << PD4) | (1 << PD5);   // pull-up
+
+    last_A = (PIND >> PD2) & 1;
+    last_B = (PIND >> PD4) & 1;
+
+    DDRC = 0xF0;
+    PORTC = 0x3F;
+
+    // motor pins
     DDRD |= (1 << PD6) | (1 << PD7);
 
 
@@ -44,7 +87,10 @@ int main(void)
 
     lcd_set_cursor(0, 0);
     lcd_print("Angle:");
+    PCICR |= (1 << PCIE2);    
+    PCMSK2 |= (1 << PCINT20); 
 
+    sei();
 
     while (1)
     {
@@ -56,6 +102,8 @@ int main(void)
         char last_position[16];
         dtostrf(last_saved_angle, 6, 2, last_position);
 
+        LCD_set_cursor(0, 0);
+        printf("%s", buffer);
 
             motor_rotate_to(last_saved_angle);
         }
