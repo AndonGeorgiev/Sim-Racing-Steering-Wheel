@@ -1,15 +1,11 @@
-#include <Arduino.h>
-
-
 #include <stdio.h>
 #include <avr/io.h>
 #include <util/delay.h>
-
-#define F_CPU 16000000UL
+#include "usart.h"
+#include "i2cmaster.h"
+#include "lcd.h"
 #include <avr/interrupt.h>
 #include <stdlib.h>
-#include "i2cmaster.h"
-#include "lcd.h"  
 
 volatile long encoder_count = 0;
 volatile int8_t direction = 0;
@@ -33,59 +29,34 @@ void motor_backward() {
     PORTD &= ~(1 << PD6);
 }
 
-// External interrupt on INT0 (PD2)
-ISR(INT0_vect) {
-    uint8_t b = PIND & (1 << PD4);
-    direction = (b) ? -1 : 1;
-    encoder_count += direction;
-}
-
-// Main
-int main(void) {
+int main(void)
+{
     // LCD init
     i2c_init();
-    lcd_init();
-    lcd_backlight();
-    lcd_clear();
+    LCD_init();
 
-    // Encoder pins
-    DDRD &= ~((1 << PD2) | (1 << PD4)); 
-    PORTD |= (1 << PD2) | (1 << PD4);   
-
-    // Index pin (опционално)
-    DDRD &= ~(1 << PD5);
-    PORTD |= (1 << PD5);
-
-    // Button pins
-    DDRB &= ~((1 << PB0) | (1 << PB1));
-    PORTB |= (1 << PB0) | (1 << PB1);  
-    // Motor pins
     DDRD |= (1 << PD6) | (1 << PD7);
 
-   
-    EICRA |= (1 << ISC00);
-    EIMSK |= (1 << INT0);  
 
-    sei(); 
+    EICRA |= (1 << ISC00); 
+    EIMSK |= (1 << INT0);
+
 
     lcd_set_cursor(0, 0);
     lcd_print("Angle:");
 
-    while (1) {
-        // ъгъл - да питам чата за оптимизация на формулата!
+
+    while (1)
+    {
         angle = ((float)encoder_count / pulses_per_rev) * 360.0;
 
         char buffer[16];
         dtostrf(angle, 6, 2, buffer);
-        lcd_set_cursor(0, 1);
-        lcd_print("              "); 
-        lcd_set_cursor(0, 1);
-        lcd_print(buffer);
-        lcd_print(" deg");
 
-    
-        if (!(PINB & (1 << PB0))) {
-            _delay_ms(50); 
+        char last_position[16];
+        dtostrf(last_saved_angle, 6, 2, last_position);
+
+
             motor_rotate_to(last_saved_angle);
         }
 
@@ -119,4 +90,3 @@ void motor_rotate_to(float target_angle) {
     }
     motor_stop();
 }
-
