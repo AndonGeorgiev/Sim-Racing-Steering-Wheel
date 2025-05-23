@@ -47,16 +47,19 @@ ISR(PCINT2_vect)
 
 void motor_rotate_to(float target_angle);
 
-void motor_stop() {
+void motor_stop()
+{
     PORTD &= ~((1 << PD6) | (1 << PD7));
 }
 
-void motor_forward() {
+void motor_forward()
+{
     PORTD |= (1 << PD6);
     PORTD &= ~(1 << PD7);
 }
 
-void motor_backward() {
+void motor_backward()
+{
     PORTD |= (1 << PD7);
     PORTD &= ~(1 << PD6);
 }
@@ -85,8 +88,6 @@ int main(void)
     EIMSK |= (1 << INT0);
 
 
-    lcd_set_cursor(0, 0);
-    lcd_print("Angle:");
     PCICR |= (1 << PCIE2);    
     PCMSK2 |= (1 << PCINT20); 
 
@@ -105,34 +106,45 @@ int main(void)
         LCD_set_cursor(0, 0);
         printf("%s", buffer);
 
+         LCD_set_cursor(0, 1);
+        printf("%s", last_position);
+
+        if (!(PINC & (1 << PC0)))
+        {
+            _delay_ms(50);
             motor_rotate_to(last_saved_angle);
         }
 
-        if (!(PINB & (1 << PB1))) {
-            _delay_ms(50); 
+        if (!(PINC & (1 << PC1)))
+        {
+            _delay_ms(50);
             motor_rotate_to(0.0);
         }
 
-
-        if (!(PIND & (1 << PD5))) {
+        if (!(PINC & (1 << PC2)))
+        {
             last_saved_angle = angle;
-            _delay_ms(300); 
+            _delay_ms(300);
         }
     }
 }
 
-// clear the err, saved in file 28.05.2025 (dekstopa!!!!)
-
-void motor_rotate_to(float target_angle) {
+void motor_rotate_to(float target_angle)
+{
     float error;
-    while (1) {
+    while (1)
+    {
         error = target_angle - angle;
 
-        if (fabs(error) < 1.0) break; 
+        if (fabs(error) < 1.0)
+            break;
 
-        if (error > 0) {
+        if (error > 0)
+        {
             motor_forward();
-        } else {
+        }
+        else
+        {
             motor_backward();
         }
     }
