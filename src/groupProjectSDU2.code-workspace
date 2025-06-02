@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "interrupts",
+			"path": "../../../../Documents/PlatformIO/Projects/interrupts"
+		},
+		{
+			"name": "USART and I2C",
+			"path": "../../../../Documents/PlatformIO/Projects/USART and I2C"
+		},
+		{
+			"name": "interupsEx",
+			"path": "../../../../Documents/PlatformIO/Projects/interupsEx"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"stdlib.h": "c"
+		}
+	}
+}
