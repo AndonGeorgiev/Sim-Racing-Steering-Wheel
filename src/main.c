@@ -14,6 +14,7 @@ float last_saved_angle = 0.0;
 const float pulses_per_rev = 500.0 * 4.0;
 volatile uint8_t last_A = 0;
 volatile uint8_t last_B = 0;
+uint8_t speed;
 
 ISR(INT0_vect)
 {
@@ -30,7 +31,7 @@ ISR(INT0_vect)
     }
 }
 
-ISR(PCINT2_vect)
+ISR(PCINT2_vect) // PCINT[23:16] за PORTD
 {
     uint8_t A = (PIND >> PD2) & 1;
     uint8_t B = (PIND >> PD4) & 1;
@@ -45,23 +46,32 @@ ISR(PCINT2_vect)
     }
 }
 
+void pwm_init()
+{
+    DDRD |= (1 << PD6); 
+    
+    TCCR0A |= (1 << WGM01) | (1 << WGM00); 
+    TCCR0A |= (1 << COM0A1);               
+    TCCR0B |= (1 << CS01);                 
+}
+
 void motor_rotate_to(float target_angle);
 
 void motor_stop()
 {
-    PORTD &= ~((1 << PD6) | (1 << PD7));
+    OCR0A = 0;
 }
 
 void motor_forward()
 {
-    PORTD |= (1 << PD6);
+    OCR0A = speed;
     PORTD &= ~(1 << PD7);
 }
 
 void motor_backward()
 {
     PORTD |= (1 << PD7);
-    PORTD &= ~(1 << PD6);
+    OCR0A = speed;
 }
 
 int main(void)
@@ -70,9 +80,8 @@ int main(void)
     i2c_init();
     LCD_init();
 
-    // encoder pins
-    DDRD &= ~((1 << PD2) | (1 << PD4) | (1 << PD5)); 
-    PORTD |= (1 << PD2) | (1 << PD4) | (1 << PD5);   // pull-up
+    DDRD &= ~((1 << PD2) | (1 << PD4) | (1 << PD5));
+    PORTD |= (1 << PD2) | (1 << PD4) | (1 << PD5);
 
     last_A = (PIND >> PD2) & 1;
     last_B = (PIND >> PD4) & 1;
@@ -83,13 +92,13 @@ int main(void)
     // motor pins
     DDRD |= (1 << PD6) | (1 << PD7);
 
+    pwm_init();
 
-    EICRA |= (1 << ISC00); 
+    EICRA |= (1 << ISC00);
     EIMSK |= (1 << INT0);
 
-
-    PCICR |= (1 << PCIE2);    
-    PCMSK2 |= (1 << PCINT20); 
+    PCICR |= (1 << PCIE2);
+    PCMSK2 |= (1 << PCINT20);
 
     sei();
 
@@ -106,7 +115,7 @@ int main(void)
         LCD_set_cursor(0, 0);
         printf("%s", buffer);
 
-         LCD_set_cursor(0, 1);
+        LCD_set_cursor(0, 1);
         printf("%s", last_position);
 
         if (!(PINC & (1 << PC0)))
@@ -132,12 +141,27 @@ int main(void)
 void motor_rotate_to(float target_angle)
 {
     float error;
+    float total_distance = fabs(target_angle - angle);
+    float current_distance;
+
     while (1)
     {
         error = target_angle - angle;
+        current_distance = fabs(error);
 
-        if (fabs(error) < 1.0)
+        if (current_distance < 1.0)
+        {
             break;
+        }
+
+        if (total_distance < 0.2 * current_distance)
+        {
+            speed = 80;
+        }
+        else
+        {
+            speed = 180;
+        }
 
         if (error > 0)
         {
@@ -150,3 +174,16 @@ void motor_rotate_to(float target_angle)
     }
     motor_stop();
 }
+
+
+/*
+
+motor driver to arduino conection 
+
+ENA → PD6 (PWM)
+
+IN1 → +12V 
+
+IN2 → PD7 
+
+*/
