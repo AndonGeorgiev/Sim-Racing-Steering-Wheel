@@ -20,6 +20,9 @@ const float pulses_per_rev = 500.0 * 4.0;
 volatile uint8_t last_A = 0;
 volatile uint8_t last_B = 0;
 
+#define PWM_PERIOD 10 // ms
+#define PWM_DUTY 6    // 60% duty cycle
+
 ISR(INT0_vect)
 {
     uint8_t A = (PIND >> PD2) & 1;
@@ -49,8 +52,6 @@ ISR(PCINT2_vect)
         last_B = B;
     }
 }
-
-void motor_rotate_to(float target_angle);
 
 void motor_stop()
 {
@@ -95,16 +96,11 @@ unsigned char USART_Receive(void)
 void sendValToNextion(const char *component, int value)
 {
     char buffer[32];
-    // Build command string: component.txt="value"
     sprintf(buffer, "%s.val=%d", component, value);
-
-    // Send each character
     for (int i = 0; buffer[i] != '\0'; i++)
     {
         USART_Transmit(buffer[i]);
     }
-
-    // Send end-of-command bytes
     USART_Transmit(0xFF);
     USART_Transmit(0xFF);
     USART_Transmit(0xFF);
@@ -130,11 +126,10 @@ void handleButton(uint8_t id)
 void updateCurrAngle(void)
 {
     uint32_t millis = (uint32_t)TCNT1;
-    if (millis - lastUpdate >= 62500) // 62500 250ms at 16M/256 pre
+    if (millis - lastUpdate >= 62500) // 250ms
     {
         lastUpdate = millis;
-
-        sendValToNextion("CurrAngle", angle); // Update current angle label
+        sendValToNextion("CurrAngle", angle);
     }
 }
 
@@ -156,12 +151,11 @@ void receiveNextionInput(void)
 int main(void)
 {
     usart_init();
-
     TCCR1B |= (1 << CS12);
 
     // encoder pins
     DDRD &= ~((1 << PD2) | (1 << PD4) | (1 << PD5));
-    PORTD |= (1 << PD2) | (1 << PD4) | (1 << PD5); // pull-up
+    PORTD |= (1 << PD2) | (1 << PD4) | (1 << PD5);
 
     last_A = (PIND >> PD2) & 1;
     last_B = (PIND >> PD4) & 1;
@@ -178,59 +172,82 @@ int main(void)
     PCICR |= (1 << PCIE2);
     PCMSK2 |= (1 << PCINT20);
 
-    sei(); 
-
-
- 
+    sei();
 
     while (1)
     {
         updateCurrAngle();
         receiveNextionInput();
-        angle = ((float)encoder_count / pulses_per_rev) * 360.0; 
+        angle = ((float)encoder_count / pulses_per_rev) * 360.0;
     }
 }
 
 void motor_rotate_to(float target_angle)
 {
-
-    int current_direction =0;
+    int current_direction = 0;
     float error;
+
     while (1)
     {
         angle = ((float)encoder_count / pulses_per_rev) * 360.0;
-
         error = target_angle - angle;
 
         if (fabs(error) < 1.0)
-        {
-
             break;
-        }
+
+        float percent = fabs(angle / target_angle);
 
         if (error > 0)
         {
-           if (current_direction != 1)
+            if (current_direction != 1)
             {
                 motor_stop();
                 _delay_ms(20);
-                motor_forward();
                 current_direction = 1;
+            }
+
+            if (percent < 0.8)
+            {
+                PORTD |= (1 << PD6);
+                PORTD &= ~(1 << PD7);
+                _delay_ms(10);
+            }
+            else
+            {
+                PORTD |= (1 << PD6);
+                PORTD &= ~(1 << PD7);
+                _delay_ms(PWM_DUTY);
+                PORTD &= ~(1 << PD6);
+                _delay_ms(PWM_PERIOD - PWM_DUTY);
+                continue;
             }
         }
         else
         {
             if (current_direction != -1)
             {
-                PORTD &= ~(1 << PD6);
                 motor_stop();
                 _delay_ms(20);
-                motor_backward();
                 current_direction = -1;
             }
-        }
 
-        _delay_ms(10);
+            if (percent < 0.8)
+            {
+                PORTD |= (1 << PD7);
+                PORTD &= ~(1 << PD6);
+                _delay_ms(10);
+            }
+            else
+            {
+                PORTD |= (1 << PD7);
+                PORTD &= ~(1 << PD6);
+                _delay_ms(PWM_DUTY);
+                PORTD &= ~(1 << PD7);
+                _delay_ms(PWM_PERIOD - PWM_DUTY);
+                continue;
+            }
+        }
     }
+
     motor_stop();
 }
