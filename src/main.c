@@ -186,7 +186,7 @@ void motor_rotate_to(float target_angle)
 {
     int current_direction = 0;
     float error;
-    float total_movement = fabs(target_angle - angle); // цялото разстояние
+    float total_movement = fabs(target_angle - angle); 
 
     while (1)
     {
@@ -210,7 +210,7 @@ void motor_rotate_to(float target_angle)
             PORTD |= (1 << PD6);
             PORTD &= ~(1 << PD7);
 
-            if (progress < 0.2) // под 20% остава
+            if (progress < 0.2) 
             {
                 _delay_ms(PWM_DUTY);
                 PORTD &= ~(1 << PD6);
@@ -230,7 +230,7 @@ void motor_rotate_to(float target_angle)
             PORTD |= (1 << PD7);
             PORTD &= ~(1 << PD6);
 
-            if (progress < 0.2) // под 20% остава
+            if (progress < 0.2) 
             {
                 _delay_ms(PWM_DUTY);
                 PORTD &= ~(1 << PD7);
