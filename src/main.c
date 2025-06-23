@@ -21,7 +21,7 @@ volatile uint8_t last_A = 0;
 volatile uint8_t last_B = 0;
 
 #define PWM_PERIOD 10 // ms
-#define PWM_DUTY 6    // 60% duty cycle
+#define PWM_DUTY 4    // 60% duty cycle
 
 ISR(INT0_vect)
 {
@@ -186,6 +186,7 @@ void motor_rotate_to(float target_angle)
 {
     int current_direction = 0;
     float error;
+    float total_movement = fabs(target_angle - angle); // цялото разстояние
 
     while (1)
     {
@@ -195,7 +196,7 @@ void motor_rotate_to(float target_angle)
         if (fabs(error) < 1.0)
             break;
 
-        float percent = fabs(angle / target_angle);
+        float progress = fabs(error) / total_movement;
 
         if (error > 0)
         {
@@ -206,16 +207,11 @@ void motor_rotate_to(float target_angle)
                 current_direction = 1;
             }
 
-            if (percent < 0.8)
+            PORTD |= (1 << PD6);
+            PORTD &= ~(1 << PD7);
+
+            if (progress < 0.2) // под 20% остава
             {
-                PORTD |= (1 << PD6);
-                PORTD &= ~(1 << PD7);
-                _delay_ms(10);
-            }
-            else
-            {
-                PORTD |= (1 << PD6);
-                PORTD &= ~(1 << PD7);
                 _delay_ms(PWM_DUTY);
                 PORTD &= ~(1 << PD6);
                 _delay_ms(PWM_PERIOD - PWM_DUTY);
@@ -231,16 +227,11 @@ void motor_rotate_to(float target_angle)
                 current_direction = -1;
             }
 
-            if (percent < 0.8)
+            PORTD |= (1 << PD7);
+            PORTD &= ~(1 << PD6);
+
+            if (progress < 0.2) // под 20% остава
             {
-                PORTD |= (1 << PD7);
-                PORTD &= ~(1 << PD6);
-                _delay_ms(10);
-            }
-            else
-            {
-                PORTD |= (1 << PD7);
-                PORTD &= ~(1 << PD6);
                 _delay_ms(PWM_DUTY);
                 PORTD &= ~(1 << PD7);
                 _delay_ms(PWM_PERIOD - PWM_DUTY);
@@ -251,3 +242,4 @@ void motor_rotate_to(float target_angle)
 
     motor_stop();
 }
+
