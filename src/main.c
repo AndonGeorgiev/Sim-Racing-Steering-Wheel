@@ -185,45 +185,9 @@ int main(void)
 
     while (1)
     {
-
-
-        _delay_ms(300);
-        
         updateCurrAngle();
         receiveNextionInput();
         angle = ((float)encoder_count / pulses_per_rev) * 360.0; 
-
-        motor_backward();
-
-        /*  char buffer[16];
-        dtostrf(angle, 6, 2, buffer);
-
-        char last_position[16];
-        dtostrf(last_saved_angle, 6, 2, last_position);
-
-        LCD_set_cursor(0, 0);
-        printf("%s", buffer);
-
-         LCD_set_cursor(0, 1);
-        printf("%s", last_position);
-
-        if (!(PINC & (1 << PC0)))
-        {
-            _delay_ms(50);
-            motor_rotate_to(last_saved_angle);
-        }
-
-        if (!(PINC & (1 << PC1)))
-        {
-            _delay_ms(50);
-            motor_rotate_to(0.0);
-        }
-
-        if (!(PINC & (1 << PC2)))
-        {
-            last_saved_angle = angle;
-            _delay_ms(300);
-        }*/
     }
 }
 
@@ -269,5 +233,4 @@ void motor_rotate_to(float target_angle)
         _delay_ms(10);
     }
     motor_stop();
-    angle = 0;
 }
